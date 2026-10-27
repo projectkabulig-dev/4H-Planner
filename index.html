@@ -105,6 +105,7 @@ footer.app-f b{color:var(--navy)}
 .fields div{border-bottom:1.5px solid #333;padding-bottom:1px;min-height:22px}
 .fields small{display:block;font-size:8.5pt;color:#555}
 .sec{margin:10px 0}.sec h3{break-after:avoid}.sec .body{orphans:3;widows:3}.keep{break-inside:avoid}
+.fig{display:block;margin:6px 0;white-space:normal;break-inside:avoid;break-after:avoid}.fig svg{display:block}.figph{display:block;border:1.5px dashed #888;border-radius:8px;padding:14px;color:#555;font-size:10pt;margin:6px 0}.ftab{border-collapse:collapse;margin:6px 0}.ftab td,.ftab th{border:1.5px solid #0B1F4B;padding:3px 12px;font-size:11pt}.ftab th{background:#E4ECFA}
 .sec h3{margin:0 0 3px;font-size:14pt;border-left:6px solid var(--gold);padding-left:8px}
 .sec .body{white-space:pre-wrap;font-size:12pt;line-height:1.5}
 .lc{background:#EEF2FA;border-radius:8px;padding:7px 10px;margin:8px 0;font-size:11.5pt}
@@ -473,7 +474,7 @@ function renderPlan(){
     alert(`Magkaiba ang kalkulasyon.\nAI: ${ai.toUpperCase()}${aiHi!==null?", heat index "+aiHi+"°C":""}\nApp: ${S.level.toUpperCase()}${ap?", heat index "+ap.txt+"°C":""}\n\nHuwag ituloy ang LAS na ito. Bumalik sa Pahina 3 at piliin na ang app ang tutukoy, o ipasuri sa AI ang paghahanap sa chart.`);return}
    if(S.level==="hinto"){showDoc(hintoCard(c),false);return}
   }
-  if(!p.ALAMIN&&!p.SURIIN){alert("Hindi mabasa ang nilalaman. Siguraduhing kasama ang mga pamagat na ## ALAMIN, ## SURIIN, at ## SAGOT.");return}
+  if(!p.ALAMIN&&!p.SURIIN){alert("Hindi mabasa ang nilalaman. Kailangang may mga pamagat na ALAMIN, SURIIN, at SAGOT, bawat isa sa sariling linya. Nakita ng app: "+(Object.keys(p).join(", ")||"wala")+".");return}
   S.parts=lasDoc(c,p);showDoc(S.parts.las,true);$("#partBtns").style.display="flex"});
 }
 function copyPrompt(){
@@ -484,6 +485,31 @@ function copyPrompt(){
 }
 
 /* ===== MASTER PROMPT ===== */
+const FIGGUIDE=`MGA LARAWAN (iguguhit ng app; ikaw ay magsusulat lamang ng tag)
+Maglagay ng tag sa SARILING LINYA sa anyong [[FIG: ...]]. Maglagay ng 1 hanggang 2 larawan sa ALAMIN, 1 sa bawat HALIMBAWA, at sa mga aytem ng GAWIN at SURIIN kung nakakatulong ito sa tanong. Huwag gumuhit gamit ang text o ASCII. Dapat tugma ang mga numero sa tag, sa tanong, at sa sagot. Huwag ilagay sa larawan ang mismong sagot (hal. huwag lagyan ng pangalan ang hugis kung ang tanong ay ang pangalan nito).
+Mga tag (gamitin ang eksaktong anyo):
+[[FIG: shape triangle,rectangle,square]] hugis: triangle, rectangle, square, circle, oval, rhombus, trapezoid, parallelogram, pentagon, hexagon, octagon, star. Opsyon: rot=30 size=big|small label=yes
+[[FIG: count fish 7]] pagbibilang hanggang 30: fish, boat, coconut, star, tile, apple, mango, book, coin, dot. Opsyon: x=2 (ilan ang may ekis, para sa pagbabawas) row=5
+[[FIG: tenframe 13]] ten-frame hanggang 20
+[[FIG: numberline 0 20 mark=13 hop=5>9 hide=10 step=2]] number line (mark=tuldok, hop=talon mula>hanggang, hide=itago ang numero)
+[[FIG: fraction 3/4 bar]] bar, circle, o set; maraming fraction: fraction 1/2,2/3 bar; label=yes
+[[FIG: array 3 4]] hanay x kolum na tuldok (multiplication)
+[[FIG: blocks 1 3 5]] base-ten blocks (daan, sampu, isa)
+[[FIG: grid 5 3 shade=6]] grid ng parisukat para sa area
+[[FIG: rect 8 5 unit=cm hide=w]] parihaba na may sukat (hide=w, h, o both)
+[[FIG: bar Bangka=5 Isda=8 Niyog=3 title=Mga_Nahuli]] bar graph (values=yes para ipakita ang bilang)
+[[FIG: pict Lun=3 Mar=5 icon=fish key=1 title=Isda]] pictograph (key=ilan ang katumbas ng isang larawan)
+[[FIG: clock 3:30]] orasan
+[[FIG: ruler 7 unit=cm]] o [[FIG: ruler 2 9]] ruler na may bagay (mula 0 hanggang 7, o mula 2 hanggang 9)
+[[FIG: money 20,10,5]] bill at barya
+[[FIG: angle 60 label=?]] anggulo (label=? para itago ang sukat, label=no para walang label)
+[[FIG: tri 3 4 5 hide=c unit=cm]] tatsulok na may mga gilid (hide=a, b, o c)
+[[FIG: circle r=5 unit=cm]] o d=10 o hide=yes
+[[FIG: graph y=2x+1 xr=-6,6 yr=-6,6 pts=0,1;2,5]] graph ng equation (pwede rin y=x^2-4); plane para sa mga punto lang
+[[FIG: dice 3,5]] dice; [[FIG: spinner 4 shade=1 labels=A,B,C,D]] spinner
+[[FIG: table Pangalan,Iskor | Ana,15 | Ben,18]] talahanayan
+Piliin ang angkop sa baitang. Grades 1-3: shape, count, tenframe, numberline, blocks, clock, money, ruler, pict, array. Grades 4-6: fraction, array, grid, rect, angle, bar, numberline, clock, ruler, money. Grades 7-10: angle, tri, circle, graph, plane, table, spinner, dice, bar. Kung walang angkop na tag, sumulat ng [[FIG: maikling paglalarawan]] at maglalagay ang app ng kahon na "Gumuhit dito".`;
+
 function pagesFor(c,l){l=l||S.level;return c.pages==="auto"?({hayo:3,hinay:3,hinga:2})[l]:+c.pages}
 function specFor(l,n){
  const big=n>=3;
@@ -521,14 +547,16 @@ MGA PANUNTUNAN
 5. ${lang}
 6. Katumpakan: kalkulahin at suriin ang bawat sagot nang dalawang beses bago isulat. Kung may duda, palitan ang aytem.
 7. Plain text lang ang notasyon: gamitin ang / sa fraction, ^ sa exponent, sqrt() sa square root, at x para sa pagpaparami. Huwag gumamit ng LaTeX o markdown table.
-8. Huwag magdagdag ng bahagi para sa well-being check-in, paalala sa magulang, o header. Idadagdag na ito ng app.\n9. Lagyan ng numero ang bawat aytem (1, 2, 3...) at ipagpatuloy ang pagnunumero sa GAWIN, GAWIN_SA_BAHAY, at SURIIN nang walang pag-uulit. Sa SAGOT, gamitin ang parehong numero.\n10. Pagkatapos ng bawat aytem sa GAWIN at SURIIN, maglagay ng sariling linya na 'Sagot: ______________' para may lugar ang bata na magsulat.
+8. Huwag magdagdag ng bahagi para sa well-being check-in, paalala sa magulang, o header. Idadagdag na ito ng app.\n9. Lagyan ng numero ang bawat aytem sa anyong 1) 2) 3) (may panaklong, hindi 1. 2.) at ipagpatuloy ang pagnunumero sa GAWIN, GAWIN_SA_BAHAY, at SURIIN nang walang pag-uulit. Sa SAGOT, gamitin ang parehong numero at isulat ang bawat isa sa isang linya, hal. '5) Sagot: 3' kasunod ang 'Solusyon: ...'.\n10. Pagkatapos ng bawat aytem sa GAWIN at SURIIN, maglagay ng sariling linya na 'Sagot: ______________' para may lugar ang bata na magsulat.
 
 KAILANGANG BAHAGI AT SUKAT
 ${specFor(S.level,pagesFor(c))}
 
+${FIGGUIDE}
+
 FORMAT NG OUTPUT (mahigpit)
 Gamitin lamang ang mga pamagat na ito, bawat isa sa sariling linya at nagsisimula sa ##, sa ganitong ayos: ${L.keys.map(k=>"## "+k).join(", ")}, ## SAGOT.
-Walang pambungad o pangwakas na pangungusap sa labas ng mga bahaging ito.`;
+Walang pambungad o pangwakas na pangungusap sa labas ng mga bahaging ito. Ilagay ang BUONG output sa iisang code block (\`\`\` sa simula at dulo) para hindi masira ang format kapag kinopya.`;
 }
 
 function chartText(){
@@ -575,24 +603,308 @@ MGA PANUNTUNAN SA LAS
 6. Katumpakan: kalkulahin at suriin ang bawat sagot nang dalawang beses bago isulat. Kung may duda, palitan ang aytem. Suriin din nang dalawang beses ang paghahanap sa chart.
 7. Plain text lang ang notasyon: gamitin ang / sa fraction, ^ sa exponent, sqrt() sa square root, at x para sa pagpaparami. Huwag gumamit ng LaTeX o markdown table.
 8. Huwag magdagdag ng bahagi para sa well-being check-in, paalala sa magulang, o header. Idadagdag na ito ng app.
-9. Lagyan ng numero ang bawat aytem (1, 2, 3...) at ipagpatuloy ang pagnunumero sa GAWIN, GAWIN_SA_BAHAY, at SURIIN nang walang pag-uulit. Sa SAGOT, gamitin ang parehong numero.
+9. Lagyan ng numero ang bawat aytem sa anyong 1) 2) 3) (may panaklong, hindi 1. 2.) at ipagpatuloy ang pagnunumero sa GAWIN, GAWIN_SA_BAHAY, at SURIIN nang walang pag-uulit. Sa SAGOT, gamitin ang parehong numero at isulat ang bawat isa sa isang linya, hal. '5) Sagot: 3' kasunod ang 'Solusyon: ...'.
 10. Pagkatapos ng bawat aytem sa GAWIN at SURIIN, maglagay ng sariling linya na 'Sagot: ______________'.
 
+${FIGGUIDE}
+
 FORMAT NG OUTPUT (mahigpit)
-Magsimula sa ## ANTAS. Pagkatapos, gamitin lamang ang mga pamagat ng antas na nakuha mo, bawat isa sa sariling linya at nagsisimula sa ##. Walang pambungad o pangwakas na pangungusap sa labas ng mga bahaging ito.`;
+Magsimula sa ## ANTAS. Pagkatapos, gamitin lamang ang mga pamagat ng antas na nakuha mo, bawat isa sa sariling linya at nagsisimula sa ##. Walang pambungad o pangwakas na pangungusap sa labas ng mga bahaging ito. Ilagay ang BUONG output sa iisang code block (\`\`\` sa simula at dulo) para hindi masira ang format kapag kinopya.`;
 }
 
 /* ===== PARSE CLAUDE OUTPUT ===== */
 function parseLAS(txt){
- const names=["ANTAS","ALAMIN","HALIMBAWA","GAWIN_SA_BAHAY","GAWIN","SURIIN","SAGOT"],out={};let cur=null;
+ const map={ANTAS:"ANTAS",ALAMIN:"ALAMIN",HALIMBAWA:"HALIMBAWA",GAWIN_SA_BAHAY:"GAWIN_SA_BAHAY",GAWIN:"GAWIN",SURIIN:"SURIIN",SAGOT:"SAGOT",ANSWER_KEY:"SAGOT"};
+ const out={};let cur=null;
  txt.replace(/\r/g,"").split("\n").forEach(line=>{
-  const m=line.match(/^\s*#{1,3}\s*\**\s*([A-Za-z_ ]+?)\s*\**\s*$/);
-  const k=m&&m[1].toUpperCase().replace(/\s+/g,"_");
-  if(k&&names.includes(k)){cur=k;out[cur]="";return}
+  const raw=line.trim();
+  if(/^```/.test(raw))return;
+  // pamagat: nag-iisa sa linya, may # o ** o : o wala (hal. "## ALAMIN", "**Alamin**", "ALAMIN:", "Alamin")
+  const m=raw.match(/^[#>*\s-]*([A-Za-zÑñ_ ]+?)[\s:*#]*$/);
+  const k=m&&m[1].toUpperCase().trim().replace(/\s+/g,"_");
+  if(k&&map[k]){cur=map[k];out[cur]=out[cur]||"";return}
   if(cur)out[cur]+=line+"\n";
  });
- Object.keys(out).forEach(k=>out[k]=out[k].trim());
+ Object.keys(out).forEach(k=>out[k]=out[k].replace(/\n{3,}/g,"\n\n").trim());
+ // ayusin ang nasirang sagot kapag kinopya mula sa nakikitang teksto (hal. "5.", blangko, "3." ay naging 5) Sagot: 3)
+ if(out.SAGOT)out.SAGOT=out.SAGOT.replace(/^(\d+)[.)]\s*\n+\s*(\d+)[.)]\s*\n+/gm,"$1) Sagot: $2\n");
  return out;
+}
+
+/* ===== FIGURES: iginuguhit ng app mula sa [[FIG: ...]] ===== */
+let FIGID=0;
+const NV="#0B1F4B",GD="#D4A017",LT="#E4ECFA",SH="#F6D77C",BL="#8FA9D9";
+const nz=(v,d)=>{const x=parseFloat(v);return isNaN(x)?d:x};
+const lab=s=>String(s).replace(/_/g," ");
+const fmtN=v=>String(Math.round(v*1e6)/1e6);
+const TX=(x,y,s,sz,anc,fill,wt)=>`<text x="${x.toFixed?x.toFixed(1):x}" y="${y.toFixed?y.toFixed(1):y}" font-size="${sz||12}" text-anchor="${anc||"middle"}" fill="${fill||NV}" font-weight="${wt||700}" font-family="Nunito,Arial,sans-serif">${esc(s)}</text>`;
+const kvp=a=>{const o={},p=[],raw=[];a.forEach(t=>{const i=t.indexOf("=");if(i>0){o[t.slice(0,i).toLowerCase()]=t.slice(i+1);raw.push([t.slice(0,i),t.slice(i+1)])}else p.push(t)});o.__raw=raw;return{o,p}};
+const SV=(w,h,inner,sc)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${Math.round(w*sc)}" style="max-width:100%;height:auto" role="img">${inner}</svg>`;
+const PT=pts=>pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+const poly=(pts,fill,rot,cx,cy)=>`<polygon points="${PT(pts)}" fill="${fill||LT}" stroke="${NV}" stroke-width="2.5" stroke-linejoin="round"${rot?` transform="rotate(${rot} ${cx} ${cy})"`:""}/>`;
+const reg=(n,cx,cy,r,off)=>Array.from({length:n},(_,i)=>{const a=((off===undefined?-90:off)+360*i/n)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)]});
+const LN=(x1,y1,x2,y2,w,c)=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c||NV}" stroke-width="${w||2}" stroke-linecap="round"/>`;
+const figScale=()=>{const g=+($("#grade")||{value:5}).value;return g<=3?1.2:g<=6?1.05:1};
+
+/* --- mga hugis --- */
+const SHAPE_ALIAS={tatsulok:"triangle",parihaba:"rectangle",parisukat:"square",bilog:"circle",diamond:"rhombus"};
+function shapeSvg(name,cx,cy,r,rot){
+ name=SHAPE_ALIAS[name]||name;const R=rot||0,rt=`transform="rotate(${R} ${cx} ${cy})"`;
+ switch(name){
+  case"triangle":return poly([[cx,cy-r],[cx+r*1.1,cy+r*.8],[cx-r*1.1,cy+r*.8]],LT,R,cx,cy);
+  case"rectangle":return `<rect x="${cx-r*.95}" y="${cy-r*.6}" width="${r*1.9}" height="${r*1.2}" fill="${LT}" stroke="${NV}" stroke-width="2.5" ${rt}/>`;
+  case"square":return `<rect x="${cx-r*.72}" y="${cy-r*.72}" width="${r*1.44}" height="${r*1.44}" fill="${LT}" stroke="${NV}" stroke-width="2.5" ${rt}/>`;
+  case"circle":return `<circle cx="${cx}" cy="${cy}" r="${r*.85}" fill="${LT}" stroke="${NV}" stroke-width="2.5"/>`;
+  case"oval":return `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r*.6}" fill="${LT}" stroke="${NV}" stroke-width="2.5" ${rt}/>`;
+  case"rhombus":return poly([[cx,cy-r],[cx+r*.7,cy],[cx,cy+r],[cx-r*.7,cy]],LT,R,cx,cy);
+  case"trapezoid":return poly([[cx-r*.6,cy-r*.6],[cx+r*.6,cy-r*.6],[cx+r,cy+r*.6],[cx-r,cy+r*.6]],LT,R,cx,cy);
+  case"parallelogram":return poly([[cx-r*.5,cy-r*.6],[cx+r,cy-r*.6],[cx+r*.5,cy+r*.6],[cx-r,cy+r*.6]],LT,R,cx,cy);
+  case"pentagon":return poly(reg(5,cx,cy,r),LT,R,cx,cy);
+  case"hexagon":return poly(reg(6,cx,cy,r,0),LT,R,cx,cy);
+  case"octagon":return poly(reg(8,cx,cy,r*.95,-22.5),LT,R,cx,cy);
+  case"star":return poly(Array.from({length:10},(_,i)=>{const a=(-90+36*i)*Math.PI/180,rr=i%2?r*.42:r;return[cx+rr*Math.cos(a),cy+rr*Math.sin(a)]}),SH,R,cx,cy);
+ }
+ return null;
+}
+function fShape(p,o){
+ const names=(p[0]||"").toLowerCase().split(",").filter(Boolean);if(!names.length)return null;
+ const sz=o.size==="big"?1.3:o.size==="small"?.75:1,cell=100*sz,r=36*sz,rots=(o.rot||"").split(",").map(Number);
+ let inner="";
+ for(let i=0;i<names.length;i++){const s=shapeSvg(names[i],cell*i+cell/2,cell/2,r,rots[i%rots.length]||0);if(!s)return null;inner+=s;
+  if(o.label==="yes")inner+=TX(cell*i+cell/2,cell+14,names[i],12)}
+ return [cell*names.length,cell+(o.label==="yes"?22:0),inner];
+}
+
+/* --- mga larawan para sa pagbibilang --- */
+const ICON_ALIAS={isda:"fish",bangka:"boat",niyog:"coconut",bituin:"star",mansanas:"apple",mangga:"mango",libro:"book",barya:"coin"};
+function figIcon(n,x,y,s){
+ n=ICON_ALIAS[n]||n;const cx=x+s/2,cy=y+s/2,sw=1.8;
+ switch(n){
+  case"fish":return `<ellipse cx="${cx-s*.06}" cy="${cy}" rx="${s*.34}" ry="${s*.21}" fill="${BL}" stroke="${NV}" stroke-width="${sw}"/><polygon points="${PT([[cx+s*.25,cy],[cx+s*.44,cy-s*.17],[cx+s*.44,cy+s*.17]])}" fill="${BL}" stroke="${NV}" stroke-width="${sw}"/><circle cx="${cx-s*.2}" cy="${cy-s*.04}" r="${s*.04}" fill="${NV}"/>`;
+  case"boat":return `<polygon points="${PT([[x+s*.1,cy+s*.1],[x+s*.9,cy+s*.1],[x+s*.72,cy+s*.32],[x+s*.28,cy+s*.32]])}" fill="${SH}" stroke="${NV}" stroke-width="${sw}"/>${LN(cx,cy+s*.1,cx,y+s*.1,sw)}<polygon points="${PT([[cx+2,y+s*.12],[cx+2,cy+s*.02],[x+s*.82,cy+s*.02]])}" fill="${LT}" stroke="${NV}" stroke-width="${sw}"/>`;
+  case"coconut":return `<circle cx="${cx}" cy="${cy}" r="${s*.38}" fill="#A9744F" stroke="${NV}" stroke-width="${sw}"/><circle cx="${cx-s*.1}" cy="${cy-s*.08}" r="${s*.05}" fill="${NV}"/><circle cx="${cx+s*.1}" cy="${cy-s*.08}" r="${s*.05}" fill="${NV}"/><circle cx="${cx}" cy="${cy+s*.08}" r="${s*.05}" fill="${NV}"/>`;
+  case"star":return poly(Array.from({length:10},(_,i)=>{const a=(-90+36*i)*Math.PI/180,rr=i%2?s*.18:s*.42;return[cx+rr*Math.cos(a),cy+rr*Math.sin(a)]}),SH);
+  case"tile":return `<rect x="${x+s*.12}" y="${y+s*.12}" width="${s*.76}" height="${s*.76}" fill="${LT}" stroke="${NV}" stroke-width="${sw}"/>${LN(cx,y+s*.12,cx,y+s*.88,1)}${LN(x+s*.12,cy,x+s*.88,cy,1)}`;
+  case"apple":return `<circle cx="${cx}" cy="${cy+s*.04}" r="${s*.34}" fill="#D8333A" stroke="${NV}" stroke-width="${sw}"/>${LN(cx,cy-s*.28,cx+s*.06,y+s*.08,sw)}<ellipse cx="${cx+s*.14}" cy="${y+s*.14}" rx="${s*.1}" ry="${s*.05}" fill="#2E9E55" stroke="${NV}" stroke-width="1.2"/>`;
+  case"mango":return `<ellipse cx="${cx}" cy="${cy}" rx="${s*.3}" ry="${s*.38}" fill="#F2B134" stroke="${NV}" stroke-width="${sw}" transform="rotate(25 ${cx} ${cy})"/>`;
+  case"book":return `<rect x="${x+s*.18}" y="${y+s*.12}" width="${s*.64}" height="${s*.76}" fill="${BL}" stroke="${NV}" stroke-width="${sw}"/>${LN(x+s*.3,y+s*.12,x+s*.3,y+s*.88,1.5)}${LN(x+s*.42,y+s*.35,x+s*.72,y+s*.35,1.5)}${LN(x+s*.42,y+s*.5,x+s*.72,y+s*.5,1.5)}`;
+  case"coin":return `<circle cx="${cx}" cy="${cy}" r="${s*.36}" fill="${GD}" stroke="${NV}" stroke-width="${sw}"/><circle cx="${cx}" cy="${cy}" r="${s*.24}" fill="none" stroke="${NV}" stroke-width="1"/>`;
+ }
+ return `<circle cx="${cx}" cy="${cy}" r="${s*.3}" fill="${NV}"/>`;
+}
+function fCount(p,o){
+ const n=Math.max(0,Math.min(30,Math.round(nz(p[1],5)))),it=(p[0]||"dot").toLowerCase(),cell=36,per=o.row?+o.row:(n<=10?5:10),x=Math.min(n,+o.x||0);
+ const rows=Math.ceil(n/per)||1;let inner="";
+ for(let i=0;i<n;i++){const cx=8+(i%per)*cell,cy=8+Math.floor(i/per)*cell;inner+=figIcon(it,cx,cy,cell-4);
+  if(i>=n-x)inner+=LN(cx+5,cy+5,cx+cell-9,cy+cell-9,2.5,"#D8333A")+LN(cx+cell-9,cy+5,cx+5,cy+cell-9,2.5,"#D8333A")}
+ return [16+Math.min(n,per)*cell,16+rows*cell,inner];
+}
+function fTen(p,o){
+ const n=Math.max(0,Math.min(20,Math.round(nz(p[0],0)))),frames=n>10?2:1,c=34;let inner="";
+ for(let f=0;f<frames;f++){const ox=8+f*(5*c+22),cnt=Math.min(10,n-f*10);
+  inner+=`<rect x="${ox}" y="8" width="${5*c}" height="${2*c}" fill="#fff" stroke="${NV}" stroke-width="2.5"/>`+LN(ox,8+c,ox+5*c,8+c,1.5)+[1,2,3,4].map(i=>LN(ox+i*c,8,ox+i*c,8+2*c,1.5)).join("");
+  for(let i=0;i<cnt;i++)inner+=`<circle cx="${ox+(i%5)*c+c/2}" cy="${8+Math.floor(i/5)*c+c/2}" r="${c*.34}" fill="${NV}"/>`}
+ return [16+frames*5*c+(frames-1)*22,16+2*c,inner];
+}
+
+/* --- number line --- */
+function fNumberline(p,o){
+ const a=nz(p[0],0),b=nz(p[1],10);if(!(b>a))return null;let step=nz(o.step,0);
+ if(!step){const sp=b-a;step=sp<=12?1:sp<=24?2:sp<=60?5:sp<=120?10:sp<=300?20:sp<=600?50:100;const vals=[...(o.mark||"").split(","),...(o.hop||"").split(/[,>]/)].filter(Boolean).map(Number);if(sp<=30&&vals.some(v=>!isNaN(v)&&Math.abs((v-a)/step-Math.round((v-a)/step))>1e-9))step=1}
+ const W=320,x0=26,x1=W-26,y=64,X=v=>x0+(v-a)/(b-a)*(x1-x0),n=Math.round((b-a)/step)+1,ev=n<=13?1:n<=26?2:5;
+ const hide=(o.hide||"").split(",").filter(Boolean).map(Number);
+ let inner=LN(x0-12,y,x1+12,y,2.5)+`<polygon points="${PT([[x1+14,y],[x1+6,y-4],[x1+6,y+4]])}" fill="${NV}"/><polygon points="${PT([[x0-14,y],[x0-6,y-4],[x0-6,y+4]])}" fill="${NV}"/>`;
+ for(let i=0;i<n;i++){const v=a+i*step,x=X(v);inner+=LN(x,y-7,x,y+7,2);if(i%ev===0&&!hide.includes(v))inner+=TX(x,y+24,fmtN(v),12)}
+ (o.mark||"").split(",").filter(Boolean).forEach(m=>{const v=+m;inner+=`<circle cx="${X(v)}" cy="${y}" r="6" fill="${GD}" stroke="${NV}" stroke-width="2"/>`});
+ (o.hop||"").split(",").filter(Boolean).forEach(h=>{const [s,e]=h.split(">").map(Number);if(isNaN(s)||isNaN(e))return;const xs=X(s),xe=X(e),mid=(xs+xe)/2,d=e-s;
+  inner+=`<path d="M ${xs} ${y-8} Q ${mid} ${y-46} ${xe} ${y-8}" fill="none" stroke="#D8333A" stroke-width="2.5"/><polygon points="${PT([[xe,y-8],[xe-(d>0?7:-7),y-17],[xe-(d>0?2:-2),y-19]])}" fill="#D8333A"/>`+TX(mid,y-38,(d>0?"+":"")+fmtN(d),13,"middle","#D8333A")});
+ return [W,100,inner];
+}
+
+/* --- fraction --- */
+function pie(cx,cy,r,d,shade){
+ if(d===1)return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${shade?SH:"#fff"}" stroke="${NV}" stroke-width="2.5"/>`;
+ let s="";for(let i=0;i<d;i++){const a1=(-90+360*i/d)*Math.PI/180,a2=(-90+360*(i+1)/d)*Math.PI/180;
+  s+=`<path d="M ${cx} ${cy} L ${(cx+r*Math.cos(a1)).toFixed(1)} ${(cy+r*Math.sin(a1)).toFixed(1)} A ${r} ${r} 0 0 1 ${(cx+r*Math.cos(a2)).toFixed(1)} ${(cy+r*Math.sin(a2)).toFixed(1)} Z" fill="${i<shade?SH:"#fff"}" stroke="${NV}" stroke-width="2.5" stroke-linejoin="round"/>`}
+ return s;
+}
+function fFraction(p,o){
+ const mode=p.find(t=>["bar","circle","set"].includes(t.toLowerCase()))||"bar";
+ const fr=(p.find(t=>/^\d+\/\d+(,\d+\/\d+)*$/.test(t))||"").split(",").filter(Boolean).map(t=>t.split("/").map(Number)).filter(([n,d])=>d>0&&d<=16&&n>=0&&n<=48);
+ if(!fr.length)return null;let inner="",W=260,H=0,x=10;
+ if(mode==="bar"){
+  fr.forEach(([n,d])=>{const wh=Math.max(1,Math.ceil(n/d));let rem=n;
+   for(let w=0;w<wh;w++){const cw=240/d;for(let i=0;i<d;i++)inner+=`<rect x="${10+i*cw}" y="${H+8}" width="${cw}" height="30" fill="${i<rem?SH:"#fff"}" stroke="${NV}" stroke-width="2.5"/>`;rem-=d;H+=38}
+   if(o.label==="yes"){inner+=TX(130,H+22,n+"/"+d,15);H+=22}H+=14});
+  return [W,H+8,inner];
+ }
+ if(mode==="circle"){
+  fr.forEach(([n,d])=>{const wh=Math.max(1,Math.ceil(n/d));let rem=n;
+   for(let w=0;w<wh;w++){inner+=pie(x+40,52,40,d,Math.min(rem,d));rem-=d;if(o.label==="yes"&&w===wh-1)inner+=TX(x+40,112,n+"/"+d,15);x+=90}x+=14});
+  return [x,o.label==="yes"?122:104,inner];
+ }
+ fr.forEach(([n,d])=>{for(let i=0;i<d;i++){inner+=`<circle cx="${x+14+i*32}" cy="26" r="13" fill="${i<n?SH:"#fff"}" stroke="${NV}" stroke-width="2.5"/>`}
+  if(o.label==="yes")inner+=TX(x+d*16,62,n+"/"+d,15);x+=d*32+20});
+ return [x,o.label==="yes"?72:52,inner];
+}
+
+/* --- array, base-ten blocks --- */
+function fArray(p){
+ const r=Math.min(12,Math.max(1,Math.round(nz(p[0],3)))),c=Math.min(12,Math.max(1,Math.round(nz(p[1],4)))),cell=28;let inner="";
+ for(let i=0;i<r;i++)for(let j=0;j<c;j++)inner+=`<circle cx="${14+j*cell}" cy="${14+i*cell}" r="9" fill="${NV}"/>`;
+ return [c*cell,r*cell,inner];
+}
+function fBlocks(p){
+ const h=Math.min(5,Math.max(0,Math.round(nz(p[0],0)))),t=Math.min(9,Math.max(0,Math.round(nz(p[1],0)))),on=Math.min(9,Math.max(0,Math.round(nz(p[2],0))));let inner="",x=8;
+ for(let i=0;i<h;i++){inner+=`<rect x="${x}" y="8" width="60" height="60" fill="${LT}" stroke="${NV}" stroke-width="2"/>`;for(let k=1;k<10;k++)inner+=LN(x+k*6,8,x+k*6,68,.8)+LN(x,8+k*6,x+60,8+k*6,.8);x+=68}
+ if(h&&(t||on))x+=14;
+ for(let i=0;i<t;i++){inner+=`<rect x="${x}" y="8" width="12" height="60" fill="${BL}" stroke="${NV}" stroke-width="2"/>`;for(let k=1;k<10;k++)inner+=LN(x,8+k*6,x+12,8+k*6,.8);x+=18}
+ if(t&&on)x+=14;
+ for(let i=0;i<on;i++){inner+=`<rect x="${x+(i%3)*16}" y="${8+Math.floor(i/3)*16}" width="12" height="12" fill="${SH}" stroke="${NV}" stroke-width="1.8"/>`}
+ if(on)x+=3*16;
+ return [Math.max(x+8,40),76,inner];
+}
+
+/* --- graphs --- */
+function fBar(p,o){
+ const data=o.__raw.filter(([k,v])=>!["title","ymax","values","step"].includes(k.toLowerCase())&&!isNaN(+v)).map(([k,v])=>[k,+v]);
+ if(!data.length)return null;
+ const mx=Math.max(...data.map(d=>d[1])),step=nz(o.step,mx<=10?1:mx<=20?2:mx<=50?5:mx<=100?10:20),ym=nz(o.ymax,Math.ceil(mx/step)*step);
+ const L=42,B=36,Tp=o.title?34:14,ph=150,bw=32,gap=20,W=L+data.length*(bw+gap)+8,H=Tp+ph+B;let inner=o.title?TX(W/2,20,lab(o.title),14):"";
+ for(let v=0;v<=ym+1e-9;v+=step){const y=Tp+ph-v/ym*ph;inner+=LN(L,y,W-6,y,v===0?2:.8,v===0?NV:"#9AA7C2")+TX(L-6,y+4,fmtN(v),11,"end")}
+ inner+=LN(L,Tp,L,Tp+ph,2);
+ data.forEach(([k,v],i)=>{const x=L+gap/2+i*(bw+gap),h=v/ym*ph;inner+=`<rect x="${x}" y="${Tp+ph-h}" width="${bw}" height="${h}" fill="${BL}" stroke="${NV}" stroke-width="2"/>`+TX(x+bw/2,Tp+ph+16,lab(k),11);if(o.values==="yes")inner+=TX(x+bw/2,Tp+ph-h-4,fmtN(v),11)});
+ return [W,H,inner];
+}
+function fPict(p,o){
+ const key=Math.max(1,nz(o.key,1)),ic=o.icon||"star",data=[];
+ o.__raw.forEach(([k,v])=>{if(!["icon","key","title"].includes(k.toLowerCase())&&!isNaN(+v))data.push([k,+v])});
+ if(!data.length)return null;const s=26,mxI=Math.max(...data.map(d=>Math.ceil(d[1]/key))),W=84+mxI*s+10;let inner=o.title?TX(W/2,18,lab(o.title),14):"";const T0=o.title?28:6;
+ data.forEach(([k,v],i)=>{const y=T0+i*(s+8);inner+=TX(6,y+s*.68,lab(k),12,"start");for(let j=0;j<Math.ceil(v/key);j++)inner+=figIcon(ic,84+j*s,y,s);inner+=LN(6,y+s+4,W-6,y+s+4,.6,"#9AA7C2")});
+ const H=T0+data.length*(s+8)+26;inner+=figIcon(ic,6,H-24,18)+TX(30,H-10,"= "+fmtN(key),12,"start");
+ return [W,H,inner];
+}
+
+/* --- orasan, anggulo, ruler --- */
+function fClock(p){
+ const m=(p.join(" ")).match(/(\d{1,2})\s*[:. ]\s*(\d{2})/)||[null,p[0],"00"];const h=nz(m[1],12)%12,mi=nz(m[2],0);let inner=`<circle cx="75" cy="75" r="66" fill="#fff" stroke="${NV}" stroke-width="4"/>`;
+ for(let i=0;i<60;i++){const a=i*6*Math.PI/180,r1=i%5?61:55;inner+=LN(75+r1*Math.sin(a),75-r1*Math.cos(a),75+64*Math.sin(a),75-64*Math.cos(a),i%5?1:2.2)}
+ for(let i=1;i<=12;i++){const a=i*30*Math.PI/180;inner+=TX(75+45*Math.sin(a),75-45*Math.cos(a)+5,i,13)}
+ const ha=(h+mi/60)*30*Math.PI/180,ma=mi*6*Math.PI/180;
+ inner+=LN(75,75,75+26*Math.sin(ha),75-26*Math.cos(ha),5)+LN(75,75,75+37*Math.sin(ma),75-37*Math.cos(ma),3.2,"#D8333A")+`<circle cx="75" cy="75" r="4.5" fill="${NV}"/>`;
+ return [150,150,inner];
+}
+function fAngle(p,o){
+ const d=nz(p[0],60);if(d<=0||d>=360)return null;const cx=100,cy=100,L=78,a=d*Math.PI/180,ex=cx+L*Math.cos(a),ey=cy-L*Math.sin(a),r=26;
+ let inner=LN(cx,cy,cx+L,cy,3)+LN(cx,cy,ex,ey,3);
+ if(d===90)inner+=`<path d="M ${cx+14} ${cy} L ${cx+14} ${cy-14} L ${cx} ${cy-14}" fill="none" stroke="${NV}" stroke-width="2"/>`;
+ else inner+=`<path d="M ${cx+r} ${cy} A ${r} ${r} 0 ${d>180?1:0} 0 ${(cx+r*Math.cos(a)).toFixed(1)} ${(cy-r*Math.sin(a)).toFixed(1)}" fill="none" stroke="#D8333A" stroke-width="2.5"/>`;
+ inner+=`<circle cx="${cx}" cy="${cy}" r="3.5" fill="${NV}"/>`;
+ const lbl=o.label===undefined||o.label==="yes"?d+"°":o.label==="?"?"?":"";const m=(d/2)*Math.PI/180;
+ if(lbl)inner+=TX(cx+(r+16)*Math.cos(m),cy-(r+16)*Math.sin(m)+5,lbl,14,"middle","#D8333A");
+ return [200,200,inner];
+}
+function fRuler(p,o){
+ const a=p.length>1?nz(p[0],0):0,b=p.length>1?nz(p[1],7):nz(p[0],7),mx=Math.max(10,Math.ceil(b/5)*5),u=22,x0=18,W=x0*2+mx*u,X=v=>x0+v*u;
+ let inner=`<rect x="${X(a)}" y="8" width="${(b-a)*u}" height="16" rx="3" fill="${SH}" stroke="${NV}" stroke-width="2"/>`;
+ inner+=`<rect x="${x0-6}" y="36" width="${mx*u+12}" height="40" fill="${LT}" stroke="${NV}" stroke-width="2"/>`;
+ for(let i=0;i<=mx*2;i++){const x=X(i/2),big=i%2===0;inner+=LN(x,36,x,36+(big?16:9),big?1.8:1.1);if(big)inner+=TX(x,70,i/2,12)}
+ inner+=TX(W-10,90,o.unit||"cm",11,"end");
+ return [W,96,inner];
+}
+
+/* --- coordinate plane / graph --- */
+function fGraph(p,o){
+ const xr=(o.xr||"-6,6").split(",").map(Number),yr=(o.yr||"-6,6").split(",").map(Number);if(xr.length<2||yr.length<2||!(xr[1]>xr[0])||!(yr[1]>yr[0]))return null;
+ const S=260,m=22,X=v=>m+(v-xr[0])/(xr[1]-xr[0])*(S-2*m),Y=v=>S-m-(v-yr[0])/(yr[1]-yr[0])*(S-2*m);const cid="gc"+(++FIGID);let inner=`<clipPath id="${cid}"><rect x="${m}" y="${m}" width="${S-2*m}" height="${S-2*m}"/></clipPath><rect x="${m}" y="${m}" width="${S-2*m}" height="${S-2*m}" fill="#fff"/>`;
+ const sx=(xr[1]-xr[0])>12?2:1,sy=(yr[1]-yr[0])>12?2:1;
+ for(let v=Math.ceil(xr[0]);v<=xr[1];v++){inner+=LN(X(v),m,X(v),S-m,v===0?2:.6,v===0?NV:"#B8C2D8");if(v!==0&&v%sx===0)inner+=TX(X(v),Y(Math.max(yr[0],Math.min(0,yr[1])))+13,v,10)}
+ for(let v=Math.ceil(yr[0]);v<=yr[1];v++){inner+=LN(m,Y(v),S-m,Y(v),v===0?2:.6,v===0?NV:"#B8C2D8");if(v!==0&&v%sy===0)inner+=TX(X(Math.max(xr[0],Math.min(0,xr[1])))-5,Y(v)+4,v,10,"end")}
+ const expr=(p.find(t=>/^[yf]=/i.test(t))||o.y||"").replace(/^[yf]=/i,"").replace(/_/g,"");
+ if(expr&&/^[0-9x+\-*/^().\s]+$/.test(expr)){
+  const js=expr.replace(/(\d|\))\s*x/g,"$1*x").replace(/x\s*\(/g,"x*(").replace(/\^/g,"**").replace(/(\d)\s*\(/g,"$1*(");let f;try{f=new Function("x","return "+js)}catch(e){f=null}
+  if(f){let d="",pen=false;for(let i=0;i<=200;i++){const x=xr[0]+(xr[1]-xr[0])*i/200,y=f(x);if(isFinite(y)&&y>=yr[0]-1&&y<=yr[1]+1){d+=(pen?" L ":" M ")+X(x).toFixed(1)+" "+Y(y).toFixed(1);pen=true}else pen=false}
+   inner+=`<path d="${d}" fill="none" stroke="#D8333A" stroke-width="2.8" clip-path="url(#${cid})"/>`}
+ }
+ (o.pts||"").split(";").filter(Boolean).forEach(q=>{const [a,b]=q.split(",").map(Number);if(isNaN(a)||isNaN(b))return;inner+=`<circle cx="${X(a)}" cy="${Y(b)}" r="5" fill="${GD}" stroke="${NV}" stroke-width="2"/>`+(o.names==="yes"?TX(X(a)+8,Y(b)-7,`(${a}, ${b})`,10,"start"):"")});
+ inner+=TX(S-m+10,Y(0)+4,"x",12,"start")+TX(X(0)+6,m-6,"y",12,"start");
+ return [S+12,S,inner];
+}
+
+/* --- geometry: tri, circle, rect, grid --- */
+function fTri(p,o){
+ const s=p.slice(0,3).map(Number);if(s.length<3||s.some(v=>!(v>0)))return null;const [A,B,C]=s;
+ if(A+B<=C||A+C<=B||B+C<=A)return null;const idx=[0,1,2].sort((i,j)=>s[j]-s[i]),L0=s[idx[0]],s1=s[idx[1]],s2=s[idx[2]];
+ const px=(s1*s1+L0*L0-s2*s2)/(2*L0),py=Math.sqrt(Math.max(0,s1*s1-px*px)),sc=Math.min(210/L0,120/py),ox=40,oy=150;
+ const P=[[ox,oy],[ox+L0*sc,oy],[ox+px*sc,oy-py*sc]];const hide=(o.hide||"").split(",");const names=["a","b","c"],u=o.unit?" "+o.unit:"";
+ const label=i=>hide.includes(names[i])?"?":fmtN(s[i])+u;let inner=poly(P,LT);
+ const right=[[0,1,2],[1,0,2],[2,0,1]].find(([k,i,j])=>Math.abs(s[i]**2+s[j]**2-s[k]**2)<1e-6*s[k]**2);
+ if(right){const k=idx[0]===right[0]?2:null;const V=P[2],u1=[P[0][0]-V[0],P[0][1]-V[1]],u2=[P[1][0]-V[0],P[1][1]-V[1]],l1=Math.hypot(...u1),l2=Math.hypot(...u2),a=[V[0]+u1[0]/l1*13,V[1]+u1[1]/l1*13],b=[V[0]+u2[0]/l2*13,V[1]+u2[1]/l2*13];
+  inner+=`<path d="M ${a[0]} ${a[1]} L ${a[0]+b[0]-V[0]} ${a[1]+b[1]-V[1]} L ${b[0]} ${b[1]}" fill="none" stroke="${NV}" stroke-width="2"/>`}
+ inner+=TX((P[0][0]+P[1][0])/2,oy+20,label(idx[0]),14)+TX((P[0][0]+P[2][0])/2-14,(P[0][1]+P[2][1])/2-6,label(idx[1]),14,"end")+TX((P[1][0]+P[2][0])/2+14,(P[1][1]+P[2][1])/2-6,label(idx[2]),14,"start");
+ return [290,176,inner];
+}
+function fCircle(p,o){
+ const r=nz(o.r,o.d?nz(o.d,10)/2:nz(p[0],5)),u=o.unit?" "+o.unit:"",cx=100,cy=80,R=60;let inner=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${LT}" stroke="${NV}" stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="3.5" fill="${NV}"/>`;
+ const hide=o.hide==="yes";
+ if(o.show==="diameter"||o.d)inner+=LN(cx-R,cy,cx+R,cy,3,"#D8333A")+TX(cx,cy-8,(hide?"?":"d = "+fmtN(r*2)+u),13,"middle","#D8333A");
+ else if(o.show!=="none")inner+=LN(cx,cy,cx+R,cy,3,"#D8333A")+TX(cx+R/2,cy-8,(hide?"?":"r = "+fmtN(r)+u),13,"middle","#D8333A");
+ return [200,160,inner];
+}
+function fRect(p,o){
+ const w=nz(p[0],8),h=nz(p[1],5);if(!(w>0&&h>0))return null;const sc=Math.min(200/w,110/h),W=w*sc,H=h*sc,x=40,y=26,u=o.unit?" "+o.unit:"",hide=(o.hide||"").split(",");
+ let inner=`<rect x="${x}" y="${y}" width="${W}" height="${H}" fill="${LT}" stroke="${NV}" stroke-width="2.5"/>`;
+ if(w===h||(p[1]===undefined&&o.sq))inner+="";
+ inner+=TX(x+W/2,y-8,hide.includes("w")||hide.includes("both")?"?":fmtN(w)+u,14)+TX(x+W+8,y+H/2+5,hide.includes("h")||hide.includes("both")?"?":fmtN(h)+u,14,"start");
+ return [x+W+70,y+H+14,inner];
+}
+function fGrid(p,o){
+ const w=Math.min(20,Math.max(1,Math.round(nz(p[0],5)))),h=Math.min(14,Math.max(1,Math.round(nz(p[1],3)))),c=Math.min(30,Math.floor(300/w)),sh=nz(o.shade,0);let inner="";
+ for(let i=0;i<h;i++)for(let j=0;j<w;j++)inner+=`<rect x="${8+j*c}" y="${8+i*c}" width="${c}" height="${c}" fill="${i*w+j<sh?SH:"#fff"}" stroke="${NV}" stroke-width="1.8"/>`;
+ return [16+w*c,16+h*c,inner];
+}
+
+/* --- dice, spinner, money --- */
+function fDice(p){
+ const v=(p[0]||"3").split(",").map(Number).filter(n=>n>=1&&n<=6).slice(0,4);if(!v.length)return null;const pos={1:[[.5,.5]],2:[[.28,.28],[.72,.72]],3:[[.28,.28],[.5,.5],[.72,.72]],4:[[.28,.28],[.72,.28],[.28,.72],[.72,.72]],5:[[.28,.28],[.72,.28],[.5,.5],[.28,.72],[.72,.72]],6:[[.28,.25],[.72,.25],[.28,.5],[.72,.5],[.28,.75],[.72,.75]]};
+ let inner="";v.forEach((n,i)=>{const x=8+i*76;inner+=`<rect x="${x}" y="8" width="64" height="64" rx="10" fill="#fff" stroke="${NV}" stroke-width="2.8"/>`+pos[n].map(([a,b])=>`<circle cx="${x+a*64}" cy="${8+b*64}" r="6" fill="${NV}"/>`).join("")});
+ return [16+v.length*76-12,80,inner];
+}
+function fSpinner(p,o){
+ const n=Math.min(12,Math.max(2,Math.round(nz(p[0],4)))),labs=(o.labels||"").split(",").filter(Boolean),sh=nz(o.shade,0),cx=90,cy=90,R=76;let inner="";
+ for(let i=0;i<n;i++){const a1=(-90+360*i/n)*Math.PI/180,a2=(-90+360*(i+1)/n)*Math.PI/180,am=(a1+a2)/2;
+  inner+=`<path d="M ${cx} ${cy} L ${(cx+R*Math.cos(a1)).toFixed(1)} ${(cy+R*Math.sin(a1)).toFixed(1)} A ${R} ${R} 0 0 1 ${(cx+R*Math.cos(a2)).toFixed(1)} ${(cy+R*Math.sin(a2)).toFixed(1)} Z" fill="${i<sh?SH:"#fff"}" stroke="${NV}" stroke-width="2.5" stroke-linejoin="round"/>`+TX(cx+R*.62*Math.cos(am),cy+R*.62*Math.sin(am)+5,labs[i]||i+1,14)}
+ inner+=`<polygon points="${PT([[cx,cy-18],[cx+7,cy+4],[cx-7,cy+4]])}" fill="#D8333A" stroke="${NV}" stroke-width="1.5"/><circle cx="${cx}" cy="${cy}" r="5" fill="${NV}"/>`;
+ return [180,180,inner];
+}
+function fMoney(p){
+ const v=(p[0]||"").split(",").map(Number).filter(n=>n>0).slice(0,12);if(!v.length)return null;let inner="",x=8;
+ v.forEach(n=>{if(n>=20){inner+=`<rect x="${x}" y="14" width="78" height="38" rx="4" fill="${LT}" stroke="${NV}" stroke-width="2.2"/>`+TX(x+39,40,"₱"+n,16);x+=88}
+  else{inner+=`<circle cx="${x+20}" cy="33" r="20" fill="${GD}" stroke="${NV}" stroke-width="2.2"/><circle cx="${x+20}" cy="33" r="15" fill="none" stroke="${NV}" stroke-width="1"/>`+TX(x+20,39,"₱"+n,14);x+=48}});
+ return [x+4,66,inner];
+}
+function tableFig(spec){
+ const rows=spec.split("|").map(r=>r.split(",").map(c=>c.trim())).filter(r=>r.length&&r[0]!=="");if(rows.length<2)return null;
+ return `<span class="fig"><table class="ftab"><tr>${rows[0].map(c=>`<th>${esc(c)}</th>`).join("")}</tr>${rows.slice(1).map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></span>`;
+}
+
+const FIGS={shape:fShape,count:fCount,tenframe:fTen,numberline:fNumberline,fraction:fFraction,array:fArray,blocks:fBlocks,bar:fBar,pict:fPict,clock:fClock,angle:fAngle,ruler:fRuler,graph:fGraph,plane:fGraph,tri:fTri,circle:fCircle,rect:fRect,grid:fGrid,dice:fDice,spinner:fSpinner,money:fMoney};
+function figHtml(spec){
+ spec=spec.replace(/&quot;/g,'"').replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").trim();
+ const parts=spec.split(/\s+/),type=(parts[0]||"").toLowerCase();
+ try{
+  if(type==="table"){const t=tableFig(spec.slice(5).trim());if(t)return t}
+  else if(FIGS[type]){const {o,p}=kvp(parts.slice(1));const r=FIGS[type](p,o);if(r)return `<span class="fig">${SV(r[0],r[1],r[2],figScale())}</span>`}
+ }catch(e){}
+ return `<span class="figph">Gumuhit dito: ${esc(spec)}</span>`;
+}
+function fmtBody(txt){return esc(txt).replace(/[ \t]*\n?[ \t]*\[\[FIG:([^\]]*)\]\][ \t]*\n?/gi,(m,s)=>figHtml(s))}
+const N_={n:1};
+function numberSection(txt){
+ if(/^\s*\d+\s*[.)]/m.test(txt)){const nums=[...txt.matchAll(/^\s*(\d+)\s*[.)]/gm)].map(m=>+m[1]);N_.n=Math.max(...nums)+1;return txt}
+ let expect=true;return txt.split("\n").map(line=>{const t=line.trim();if(!t||/^\[\[FIG:/i.test(t))return line;
+  if(/^sagot\s*:/i.test(t)){expect=true;return line}
+  if(expect){expect=false;return (N_.n++)+") "+t}return line}).join("\n");
 }
 
 /* ===== DOCUMENTS ===== */
@@ -619,7 +931,7 @@ function wrap(head,body){
 }
 function lasDoc(c,p){
  const L=LV[S.level];
- const secs=["ALAMIN","HALIMBAWA","GAWIN","GAWIN_SA_BAHAY","SURIIN"].filter(k=>p[k]).map(k=>`<div class="sec"><h3>${SEC[k]}</h3><div class="body">${esc(p[k])}</div></div>`).join("");
+ N_.n=1;const secs=["ALAMIN","HALIMBAWA","GAWIN","GAWIN_SA_BAHAY","SURIIN"].filter(k=>p[k]).map(k=>`<div class="sec"><h3>${SEC[k]}</h3><div class="body">${fmtBody(["GAWIN","GAWIN_SA_BAHAY","SURIIN"].includes(k)?numberSection(p[k]):p[k])}</div></div>`).join("");
  const fields=`<div class="fields"><div><small>Pangalan</small></div><div><small>Baitang at Seksyon</small>Grade ${esc(c.grade)}</div><div><small>Petsa</small></div></div>`;
  const first=wrap(header(c)+fields,`${lvBox()}
  <div class="lc"><b>Learning Competency:</b> ${esc(c.comp)}${c.code?` <small>(${esc(c.code)})</small>`:""}</div>
@@ -628,7 +940,7 @@ function lasDoc(c,p){
  <div class="box keep"><b>Paalala sa magulang:</b> ${esc(L.pm)} Hindi ito graded at walang kailangang bilhin. Kung nahihirapan ang bata, ayos lang. Sabihin sa guro.</div>`);
  const key=wrap(header(c),`<h2 style="margin:6px 0">Answer Key (para sa guro at magulang)</h2>
  <div class="lc">Grade ${esc(c.grade)} · ${esc(c.subject)} · ${esc(c.comp)}${c.code?` (${esc(c.code)})`:""}</div>
- <div class="body" style="white-space:pre-wrap">${p.SAGOT?esc(p.SAGOT):"Walang bahaging SAGOT na naibalik. Humingi sa Claude ng answer key at buuin muli."}</div>`);
+ <div class="body" style="white-space:pre-wrap">${p.SAGOT?fmtBody(p.SAGOT):"Walang bahaging SAGOT na naibalik. Humingi sa Claude ng answer key at buuin muli."}</div>`);
  return {las:first,key:key};
 }
 function parentLetter(c){
